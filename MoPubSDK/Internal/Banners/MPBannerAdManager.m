@@ -27,6 +27,7 @@
 @property (nonatomic, assign) BOOL adActionInProgress;
 @property (nonatomic, assign) BOOL automaticallyRefreshesContents;
 @property (nonatomic, assign) UIInterfaceOrientation currentOrientation;
+@property (nonatomic, assign) BOOL refreshTimerActiveBeforeAppResigned;
 
 - (void)loadAdWithURL:(NSURL *)URL;
 - (void)applicationWillEnterForeground;
@@ -57,6 +58,17 @@
                                                  selector:@selector(applicationWillEnterForeground)
                                                      name:UIApplicationWillEnterForegroundNotification
                                                    object:[UIApplication sharedApplication]];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(applicationWillResignActive)
+                                                     name:UIApplicationWillResignActiveNotification
+                                                   object:[UIApplication sharedApplication]];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(applicationDidBecomeActive)
+                                                     name:UIApplicationDidBecomeActiveNotification
+                                                   object:[UIApplication sharedApplication]];
+
 
         self.automaticallyRefreshesContents = YES;
         self.currentOrientation = MPInterfaceOrientation();
@@ -110,6 +122,27 @@
 {
     if (self.automaticallyRefreshesContents) {
         [self loadAdWithURL:nil];
+    }
+}
+
+- (void)applicationWillResignActive
+{
+    if([self.refreshTimer isValid])
+    {
+        self.refreshTimerActiveBeforeAppResigned = YES;
+        [self.refreshTimer pause];
+    }
+    else
+    {
+        self.refreshTimerActiveBeforeAppResigned = NO;
+    }
+}
+
+- (void)applicationDidBecomeActive
+{
+    if(self.refreshTimerActiveBeforeAppResigned == YES)
+    {
+        [self.refreshTimer resume];
     }
 }
 
